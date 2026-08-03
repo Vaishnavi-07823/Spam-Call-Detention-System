@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "sdk_version": "0.24.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://qnuxlkuudwrxtkpjfakm.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "voxshield-ai-mcp",
+      "version": "0.1.0",
+      "title": "VoxShield AI"
+    },
+    "tools": [
+      {
+        "name": "analyze_transcript",
+        "title": "Analyze call transcript for scam risk",
+        "description": "Analyze a phone call transcript for scam indicators using VoxShield's combined rule-based + AI detection. Returns a risk score (0-100), category, explanation, and recommended action.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "transcript": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 5000,
+              "description": "The phone call transcript text to analyze."
+            }
+          },
+          "required": [
+            "transcript"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_detections",
+        "title": "List recent scam detections",
+        "description": "List the most recent VoxShield scam-detection results, including risk score, category, transcript excerpt, and explanation.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "default": 10,
+              "description": "Number of recent detections to return (1-50).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
