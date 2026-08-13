@@ -112,10 +112,55 @@ export const analyzeAudioFile = createServerFn({ method: "POST" })
  */
 async function transcribeAudio(audioBase64: string, mimeType: string): Promise<string> {
   const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY is not configured");
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+  if (!LOVABLE_API_KEY && !GEMINI_API_KEY) {
+    throw new Error("Neither LOVABLE_API_KEY nor GEMINI_API_KEY is configured.");
   }
 
+  if (GEMINI_API_KEY) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: "You are a precise audio transcription assistant. Transcribe the audio exactly as spoken. Output ONLY the transcript text, nothing else. If the audio is unclear or contains no speech, respond with 'NO_SPEECH_DETECTED'."
+              },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: audioBase64
+                }
+              }
+            ]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Gemini transcription error [${response.status}]:`, errorText);
+      throw new Error("Failed to transcribe audio. Please try pasting the transcript manually.");
+    }
+
+    const result = await response.json();
+    const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!content || content === "NO_SPEECH_DETECTED") {
+      throw new Error("No speech detected in the audio file.");
+    }
+
+    return content.trim();
+  }
+
+  // Fallback to Lovable AI Gateway
   const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {

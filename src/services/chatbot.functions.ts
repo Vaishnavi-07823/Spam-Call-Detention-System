@@ -17,24 +17,31 @@ export const chatWithAI = createServerFn({ method: "POST" })
   .inputValidator((input: { messages: ChatMessage[] }) => input)
   .handler(async ({ data }) => {
     const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+    if (!LOVABLE_API_KEY && !GEMINI_API_KEY) {
+      throw new Error("Neither LOVABLE_API_KEY nor GEMINI_API_KEY is configured.");
     }
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            {
-              role: "system",
-              content: `You are VoxShield AI's cybersecurity education assistant. Your role is to educate users about:
+    const url = GEMINI_API_KEY 
+      ? "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+      : "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+    const apiKey = GEMINI_API_KEY || LOVABLE_API_KEY;
+    const model = GEMINI_API_KEY ? "gemini-1.5-flash" : "google/gemini-3-flash-preview";
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: "system",
+            content: `You are VoxShield AI's cybersecurity education assistant. Your role is to educate users about:
 - Phone scam tactics and how to recognize them
 - Common social engineering techniques
 - How to protect personal information
@@ -44,13 +51,12 @@ export const chatWithAI = createServerFn({ method: "POST" })
 
 Keep responses concise, friendly, and actionable. Use bullet points and clear formatting.
 If asked about topics unrelated to cybersecurity or scam prevention, politely redirect the conversation.`,
-            },
-            ...data.messages,
-          ],
-          stream: false,
-        }),
-      }
-    );
+          },
+          ...data.messages,
+        ],
+        stream: false,
+      }),
+    });
 
     if (!response.ok) {
       if (response.status === 429) {
