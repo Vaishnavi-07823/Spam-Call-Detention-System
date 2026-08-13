@@ -1,14 +1,12 @@
-/**
- * Login Landing Page — Sign in to access VoxShield AI.
- */
 import { createFileRoute } from "@tanstack/react-router";
 import { Shield, Mic, Brain, Bell } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 
@@ -52,6 +50,12 @@ function LoginPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
   useEffect(() => {
     if (!loading && user) {
       if (next) {
@@ -74,6 +78,30 @@ function LoginPage() {
     }
   };
 
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    setAuthLoading(true);
+    setAuthError(null);
+    
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        alert("Sign up successful! You can now sign in.");
+        setIsSignUp(false);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate({ to: "/" });
+      }
+    } catch (err: any) {
+      setAuthError(err.message || "Authentication failed");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -86,7 +114,7 @@ function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
       {/* Hero */}
       <motion.div
-        className="flex flex-col items-center text-center"
+        className="flex flex-col items-center text-center w-full max-w-xs"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -108,7 +136,7 @@ function LoginPage() {
         <h1 className="text-4xl font-bold tracking-tight">
           Vox<span className="text-primary">Shield</span> AI
         </h1>
-        <p className="mt-3 max-w-sm text-muted-foreground">
+        <p className="mt-3 max-w-sm text-muted-foreground text-sm">
           Real-time AI-powered scam call detection. Stay protected from
           fraudulent calls with intelligent speech analysis.
         </p>
@@ -117,17 +145,65 @@ function LoginPage() {
         <Button
           onClick={handleGoogleSignIn}
           size="lg"
-          className="mt-8 w-full max-w-xs gap-2 text-base font-semibold h-14 rounded-2xl"
+          className="mt-6 w-full gap-2 text-base font-semibold h-12 rounded-2xl"
         >
           <Shield className="h-5 w-5" />
           Sign in with Google
         </Button>
 
+        <div className="relative flex py-4 items-center w-full">
+          <div className="flex-grow border-t border-border"></div>
+          <span className="flex-shrink mx-4 text-muted-foreground text-xs uppercase">Or email</span>
+          <div className="flex-grow border-t border-border"></div>
+        </div>
+
+        {/* Email/Password Sign in form */}
+        <form onSubmit={handleEmailAuth} className="flex flex-col gap-3 w-full">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+
+          {authError && (
+            <p className="text-xs text-destructive font-medium text-left mt-1">
+              {authError}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={authLoading}
+            className="h-11 w-full rounded-xl mt-1 font-semibold"
+          >
+            {authLoading ? "Please wait..." : isSignUp ? "Sign Up" : "Sign In"}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-xs text-primary hover:underline mt-2 self-center"
+          >
+            {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+          </button>
+        </form>
+
         <PWAInstallButton />
       </motion.div>
 
       {/* Feature Cards */}
-      <div className="mt-12 grid w-full max-w-sm gap-4">
+      <div className="mt-10 grid w-full max-w-sm gap-4">
         {features.map((feature, i) => (
           <motion.div
             key={feature.title}
