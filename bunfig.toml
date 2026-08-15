@@ -2,3 +2,4 @@
 saveTextLockfile = false
 minimumReleaseAge = 86400
 minimumReleaseAgeExcludes = ["@lovable.dev/vite-tanstack-config", "@lovable.dev/mcp-js"]
+
