@@ -1,7 +1,7 @@
 # VoxShield AI — Real-Time Spam/Scam Call Detection
  
 Final year project (B.Tech CSE - Cybersecurity) that listens to an ongoing call in real time and tells you how likely it is to be a scam, while it's still happening — not after you've already lost money.
-
+ 
 ## Why I built this
 
 Most fraud call detection tools work after the fact — they analyze recordings or complaints once the damage is done. Phone/UPI scams in India move fast, and by the time someone realizes something is off, the transfer is already made. The idea here was to catch red flags **live**, mid-call, so the person gets a warning while they can still hang up.
